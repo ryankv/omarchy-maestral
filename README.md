@@ -24,6 +24,10 @@ What you get, in the same panel the stock widget draws:
 - Python 3.9 or newer on PATH as `python3`. Tested on Python 3.14, aarch64.
 - Nautilus for the "reveal file" action. Omarchy installs it by default.
 
+External dependencies, all installed by `install.sh` into a virtualenv and
+nothing else: [Maestral](https://pypi.org/project/maestral/) from PyPI and
+the packages it depends on. No sudo, no system packages, no AUR.
+
 The official Dropbox client must not be running for the same folder. Maestral
 and Dropbox fighting over one directory ends badly.
 
@@ -43,7 +47,9 @@ Then click the Dropbox icon in the bar and choose **Login to Dropbox**. A
 floating terminal walks you through Maestral's link flow: it opens the Dropbox
 authorisation page, asks for the code Dropbox shows you, then asks where the
 Dropbox folder should live and which folders to sync. When it finishes it
-enables Maestral's systemd user service so syncing starts on every login.
+enables Maestral's systemd user unit, `maestral-daemon@maestral.service`,
+and hands the daemon over to it so syncing continues after the window closes
+and starts again on every login.
 
 ## Update
 
@@ -70,6 +76,7 @@ Maestral's config in `~/.config/maestral` are never touched.
 | `Service.qml` | Runs the status helper on a timer and issues `maestral pause`, `resume`, `start`. |
 | `status.py` | Talks to the Maestral daemon over its local RPC and prints one JSON object. |
 | `link.sh` | The interactive first-run flow, run in a floating terminal. |
+| `control.sh` | Pause, resume, and start. Starts through Maestral's systemd user unit when it is enabled. |
 | `Model.js` | Formatting helpers, covered by `test/model-test.sh`. |
 
 `status.py` is started with the system `python3`. If Maestral lives in a

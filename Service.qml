@@ -8,8 +8,9 @@ import "Model.js" as Model
 //
 // State comes from status.py, which asks the Maestral daemon (or, when it is
 // not running, reads its saved state) and prints one JSON object. Control goes
-// through the `maestral` command: pause, resume, start. Linking an account is
-// interactive, so it runs in a floating terminal via link.sh.
+// through control.sh: pause, resume, start (via the systemd user unit when it
+// is enabled). Linking an account is interactive, so it runs in a floating
+// terminal via link.sh.
 Item {
   id: root
 
@@ -47,7 +48,7 @@ Item {
   readonly property string pluginDir: Qt.resolvedUrl(".").toString().replace(/^file:\/\//, "").replace(/\/$/, "")
   readonly property string helperPath: pluginDir + "/status.py"
   readonly property string linkScriptPath: pluginDir + "/link.sh"
-  readonly property string maestralBin: executable !== "" ? executable : "maestral"
+  readonly property string controlScriptPath: pluginDir + "/control.sh"
 
   property string _statusOutput: ""
   property string _statusError: ""
@@ -123,11 +124,11 @@ Item {
   }
 
   function pause() {
-    runControl([maestralBin, "pause"], 0)
+    runControl(["bash", controlScriptPath, "pause"], 0)
   }
 
   function resume() {
-    runControl(daemonRunning ? [maestralBin, "resume"] : [maestralBin, "start"], 1)
+    runControl(["bash", controlScriptPath, daemonRunning ? "resume" : "start"], 1)
   }
 
   function toggleRunning() {
