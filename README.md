@@ -1,5 +1,7 @@
 # Dropbox via Maestral
 
+<img src="preview.png" width="383" alt="The Dropbox panel in the Omarchy bar: account, storage, sync status, and recent files">
+
 **Dropbox in the Omarchy bar, without the Dropbox daemon.** This is Omarchy's
 built-in Dropbox widget, rewired to drive [Maestral](https://maestral.app),
 the open-source Dropbox client written in Python.
