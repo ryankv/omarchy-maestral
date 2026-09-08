@@ -5,6 +5,11 @@
 # under ~/.local/share/maestral-venv so it never touches system Python
 # packages, and the `maestral` command is linked into ~/.local/bin.
 #
+# Maestral and every package it pulls in are pinned in requirements.txt with
+# sha256 hashes. pip runs in hash-checking mode, so this commit always installs
+# exactly the artifacts that were reviewed, never whatever PyPI serves later.
+# See requirements.txt for how to refresh the pins.
+#
 #   MAESTRAL_VENV=/some/path ./install.sh   # choose another venv location
 
 set -euo pipefail
@@ -12,14 +17,17 @@ set -euo pipefail
 PLUGIN_ID="io.github.ryankv.omarchy-maestral"
 VENV="${MAESTRAL_VENV:-$HOME/.local/share/maestral-venv}"
 BIN_DIR="$HOME/.local/bin"
+PLUGIN_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+REQUIREMENTS="$PLUGIN_DIR/requirements.txt"
 
 existing=$(command -v maestral 2>/dev/null || true)
 if [[ -n $existing && $existing != "$BIN_DIR/maestral" ]]; then
   echo "Using the maestral already on PATH: $existing"
 else
+  [[ -f $REQUIREMENTS ]] || { echo "Missing $REQUIREMENTS; the plugin checkout is incomplete." >&2; exit 1; }
   echo "Installing Maestral into $VENV ..."
   python3 -m venv "$VENV"
-  "$VENV/bin/pip" install --quiet --upgrade maestral
+  "$VENV/bin/pip" install --quiet --require-hashes --requirement "$REQUIREMENTS"
   mkdir -p "$BIN_DIR"
   ln -sfn "$VENV/bin/maestral" "$BIN_DIR/maestral"
   echo "Linked $BIN_DIR/maestral"

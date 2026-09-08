@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.ryankv.omarchy-maestral",
   "name": "Dropbox via Maestral",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "ryankv",
   "license": "MIT",
   "description": "Dropbox in the Omarchy bar, powered by the open-source Maestral client. Runs on Apple Silicon and other ARM machines where the official Dropbox daemon cannot.",

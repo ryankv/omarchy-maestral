@@ -23,12 +23,18 @@ What you get, in the same panel the stock widget draws:
 ## What you need
 
 - Omarchy 4 (Quattro) with the omarchy-shell bar.
-- Python 3.9 or newer on PATH as `python3`. Tested on Python 3.14, aarch64.
+- Python 3.10 or newer on PATH as `python3`. Tested on Python 3.14, aarch64.
 - Nautilus for the "reveal file" action. Omarchy installs it by default.
 
 External dependencies, all installed by `install.sh` into a virtualenv and
 nothing else: [Maestral](https://pypi.org/project/maestral/) from PyPI and
 the packages it depends on. No sudo, no system packages, no AUR.
+
+Every one of those packages is pinned to an exact version with sha256 hashes
+in `requirements.txt`, and `install.sh` runs pip in hash-checking mode
+(`--require-hashes`). A given plugin commit therefore always installs the same
+reviewed artifacts; a new or tampered PyPI release cannot slip in. The pins
+are resolved on Python 3.14, the version Omarchy ships.
 
 The official Dropbox client must not be running for the same folder. Maestral
 and Dropbox fighting over one directory ends badly.
@@ -57,7 +63,18 @@ and starts again on every login.
 
 ```bash
 omarchy plugin update io.github.ryankv.omarchy-maestral
-~/.local/share/maestral-venv/bin/pip install --upgrade maestral
+~/.config/omarchy/plugins/io.github.ryankv.omarchy-maestral/install.sh
+```
+
+Maestral itself is only ever updated by bumping the pins in `requirements.txt`
+in this repository. Re-running `install.sh` after a plugin update installs
+whatever version that commit pins. To refresh the pins yourself:
+
+```bash
+python3 -m venv /tmp/pip-tools && /tmp/pip-tools/bin/pip install pip-tools
+printf 'maestral==1.9.6\n' > requirements.in   # set the version you want
+/tmp/pip-tools/bin/pip-compile --generate-hashes --allow-unsafe --strip-extras \
+  --output-file requirements.txt requirements.in
 ```
 
 ## Remove
