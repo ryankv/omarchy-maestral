@@ -51,6 +51,12 @@ omarchy plugin add https://github.com/ryankv/omarchy-maestral.git --enable
 `~/.local/bin`, and enables the widget. If a `maestral` command is already on
 PATH, for example from the AUR package, it uses that instead.
 
+Set `MAESTRAL_VENV` to put the virtualenv somewhere else. It must be a
+directory inside `~/.local/share`; anything broader is refused, because
+`uninstall.sh --purge` deletes that directory and must never be pointable at
+your home folder. `install.sh` also stamps the virtualenv with a marker file
+that `--purge` checks before deleting anything.
+
 Then click the Dropbox icon in the bar and choose **Login to Dropbox**. A
 floating terminal walks you through Maestral's link flow: it opens the Dropbox
 authorisation page, asks for the code Dropbox shows you, then asks where the
@@ -84,8 +90,15 @@ printf 'maestral==1.9.6\n' > requirements.in   # set the version you want
 omarchy plugin remove io.github.ryankv.omarchy-maestral
 ```
 
-`--purge` deletes the virtualenv and command link. Your Dropbox folder and
-Maestral's config in `~/.config/maestral` are never touched.
+`--purge` deletes the virtualenv and command link. It only does so when the
+target resolves to a directory inside `~/.local/share`, is a Python virtualenv,
+and carries the marker `install.sh` wrote; otherwise it refuses before
+touching anything. A virtualenv from a release older than 0.1.2 has no marker:
+re-run `install.sh` once to stamp it, or delete it by hand. Your Dropbox folder
+and Maestral's config in `~/.config/maestral` are never touched.
+
+The refusal rules are covered by `test/uninstall-test.sh`, which runs the real
+script against a throwaway home directory.
 
 ## How it works
 
@@ -96,6 +109,7 @@ Maestral's config in `~/.config/maestral` are never touched.
 | `status.py` | Talks to the Maestral daemon over its local RPC and prints one JSON object. |
 | `link.sh` | The interactive first-run flow, run in a floating terminal. |
 | `control.sh` | Pause, resume, and start. Starts through Maestral's systemd user unit when it is enabled. |
+| `venv-path.sh` | Shared by `install.sh` and `uninstall.sh`: where the virtualenv may live and what `--purge` may delete. Covered by `test/uninstall-test.sh`. |
 | `Model.js` | Formatting helpers, covered by `test/model-test.sh`. |
 
 `status.py` is started with the system `python3`. If Maestral lives in a

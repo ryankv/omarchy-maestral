@@ -10,14 +10,20 @@
 # exactly the artifacts that were reviewed, never whatever PyPI serves later.
 # See requirements.txt for how to refresh the pins.
 #
-#   MAESTRAL_VENV=/some/path ./install.sh   # choose another venv location
+# The venv location can be changed, but it must be a directory inside
+# ~/.local/share so that uninstall.sh --purge can never be pointed at anything
+# broader (see venv-path.sh):
+#
+#   MAESTRAL_VENV=~/.local/share/venvs/maestral ./install.sh
 
 set -euo pipefail
 
-PLUGIN_ID="io.github.ryankv.omarchy-maestral"
-VENV="${MAESTRAL_VENV:-$HOME/.local/share/maestral-venv}"
-BIN_DIR="$HOME/.local/bin"
 PLUGIN_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+# shellcheck source=venv-path.sh
+source "$PLUGIN_DIR/venv-path.sh"
+
+VENV=$(resolve_venv_dir "${MAESTRAL_VENV:-$VENV_DEFAULT}") || exit 1
+BIN_DIR="$HOME/.local/bin"
 REQUIREMENTS="$PLUGIN_DIR/requirements.txt"
 
 existing=$(command -v maestral 2>/dev/null || true)
@@ -27,6 +33,8 @@ else
   [[ -f $REQUIREMENTS ]] || { echo "Missing $REQUIREMENTS; the plugin checkout is incomplete." >&2; exit 1; }
   echo "Installing Maestral into $VENV ..."
   python3 -m venv "$VENV"
+  # Stamp the venv so uninstall.sh --purge can prove this plugin created it.
+  printf '%s\n' "$PLUGIN_ID" > "$VENV/$VENV_MARKER"
   "$VENV/bin/pip" install --quiet --require-hashes --requirement "$REQUIREMENTS"
   mkdir -p "$BIN_DIR"
   ln -sfn "$VENV/bin/maestral" "$BIN_DIR/maestral"
