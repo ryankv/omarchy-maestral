@@ -47,15 +47,18 @@ omarchy plugin add https://github.com/ryankv/omarchy-maestral.git --enable
 ```
 
 `install.sh` puts Maestral into its own virtualenv at
-`~/.local/share/maestral-venv`, links the `maestral` command into
+`~/.local/share/omarchy-maestral/venv`, links the `maestral` command into
 `~/.local/bin`, and enables the widget. If a `maestral` command is already on
-PATH, for example from the AUR package, it uses that instead.
+PATH, for example from the AUR package, it uses that instead. It never
+replaces a `~/.local/bin/maestral` that it did not create itself.
 
 Set `MAESTRAL_VENV` to put the virtualenv somewhere else. It must be a
-directory inside `~/.local/share`; anything broader is refused, because
-`uninstall.sh --purge` deletes that directory and must never be pointable at
-your home folder. `install.sh` also stamps the virtualenv with a marker file
-that `--purge` checks before deleting anything.
+directory inside `~/.local/share/omarchy-maestral` that does not exist yet, is
+empty, or is a virtualenv this script built earlier. Anything else is refused,
+because `uninstall.sh --purge` deletes that directory and must never be
+pointable at something that belongs to you or to another program. `install.sh`
+stamps every virtualenv it creates with a marker naming the plugin and the
+exact directory, and `--purge` checks that stamp before deleting anything.
 
 Then click the Dropbox icon in the bar and choose **Login to Dropbox**. A
 floating terminal walks you through Maestral's link flow: it opens the Dropbox
@@ -77,9 +80,10 @@ in this repository. Re-running `install.sh` after a plugin update installs
 whatever version that commit pins. To refresh the pins yourself:
 
 ```bash
-python3 -m venv /tmp/pip-tools && /tmp/pip-tools/bin/pip install pip-tools
+tools=$(mktemp -d)
+python3 -m venv "$tools" && "$tools/bin/pip" install pip-tools
 printf 'maestral==1.9.6\n' > requirements.in   # set the version you want
-/tmp/pip-tools/bin/pip-compile --generate-hashes --allow-unsafe --strip-extras \
+"$tools/bin/pip-compile" --generate-hashes --allow-unsafe --strip-extras \
   --output-file requirements.txt requirements.in
 ```
 
@@ -91,14 +95,22 @@ omarchy plugin remove io.github.ryankv.omarchy-maestral
 ```
 
 `--purge` deletes the virtualenv and command link. It only does so when the
-target resolves to a directory inside `~/.local/share`, is a Python virtualenv,
-and carries the marker `install.sh` wrote; otherwise it refuses before
-touching anything. A virtualenv from a release older than 0.1.2 has no marker:
-re-run `install.sh` once to stamp it, or delete it by hand. Your Dropbox folder
+target resolves to a directory inside `~/.local/share/omarchy-maestral`, is a
+Python virtualenv, and carries the marker `install.sh` wrote for that exact
+directory; otherwise it refuses before touching anything. Your Dropbox folder
 and Maestral's config in `~/.config/maestral` are never touched.
 
-The refusal rules are covered by `test/uninstall-test.sh`, which runs the real
-script against a throwaway home directory.
+Releases before 0.1.3 installed into `~/.local/share/maestral-venv`. That
+location is outside the directory this plugin owns, so `--purge` will not
+delete it. Remove it by hand, then re-run `install.sh`, which replaces the
+now dangling `~/.local/bin/maestral` link:
+
+```bash
+rm -rf ~/.local/share/maestral-venv
+```
+
+The refusal rules for both scripts are covered by `test/uninstall-test.sh`,
+which runs the real code against a throwaway home directory.
 
 ## How it works
 
@@ -109,7 +121,7 @@ script against a throwaway home directory.
 | `status.py` | Talks to the Maestral daemon over its local RPC and prints one JSON object. |
 | `link.sh` | The interactive first-run flow, run in a floating terminal. |
 | `control.sh` | Pause, resume, and start. Starts through Maestral's systemd user unit when it is enabled. |
-| `venv-path.sh` | Shared by `install.sh` and `uninstall.sh`: where the virtualenv may live and what `--purge` may delete. Covered by `test/uninstall-test.sh`. |
+| `venv-path.sh` | Shared by `install.sh` and `uninstall.sh`: where the virtualenv may live, what `install.sh` may build into, and what `--purge` may delete. Covered by `test/uninstall-test.sh`. |
 | `Model.js` | Formatting helpers, covered by `test/model-test.sh`. |
 
 `status.py` is started with the system `python3`. If Maestral lives in a
@@ -137,7 +149,8 @@ the bar's widget settings.
   with its own app key, so the first link asks you to authorise "Maestral".
 - Maestral supports several accounts through config names. This widget
   follows the default `maestral` config. Set `MAESTRAL_CONFIG_NAME` in the
-  shell's environment to point it elsewhere.
+  shell's environment to point it elsewhere; the status helper, the link flow,
+  the controls, and `uninstall.sh` all honour it.
 - Maestral has no Nautilus emblem integration. File status is in the panel
   and in `maestral filestatus <path>`.
 

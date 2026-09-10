@@ -8,6 +8,9 @@
 
 set -uo pipefail
 
+CONFIG_NAME="${MAESTRAL_CONFIG_NAME:-maestral}"
+UNIT="maestral-daemon@${CONFIG_NAME}.service"
+
 if ! command -v maestral >/dev/null 2>&1; then
   echo "maestral is not installed. Run install.sh from the plugin folder first."
   exit 1
@@ -18,20 +21,20 @@ echo
 
 # If a daemon is already up but unlinked, `maestral start` only reports that it
 # is running. Stop it so start runs the full first-run dialog.
-maestral stop >/dev/null 2>&1 || true
+maestral stop --config-name "$CONFIG_NAME" >/dev/null 2>&1 || true
 
-maestral start || exit $?
+maestral start --config-name "$CONFIG_NAME" || exit $?
 
 echo
 echo "Enabling Maestral autostart on login."
-maestral autostart -Y
+maestral autostart -Y --config-name "$CONFIG_NAME"
 
 # The daemon that `maestral start` just spawned lives inside this terminal's
 # session scope and dies with it. Hand it over to the systemd user unit that
 # autostart created so syncing continues after this window closes.
 echo "Handing the daemon over to systemd."
-maestral stop >/dev/null 2>&1 || true
-systemctl --user start "maestral-daemon@maestral.service"
+maestral stop --config-name "$CONFIG_NAME" >/dev/null 2>&1 || true
+systemctl --user start "$UNIT"
 
 echo
 echo "Done. Dropbox now syncs through Maestral. Check the bar icon for status."

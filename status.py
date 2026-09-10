@@ -20,14 +20,16 @@ import time
 from pathlib import Path
 
 CONFIG_NAME = os.environ.get("MAESTRAL_CONFIG_NAME", "maestral")
-CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "omarchy-maestral"
+_XDG_CACHE_HOME = os.environ.get("XDG_CACHE_HOME", "")
+# The XDG spec says a relative XDG_CACHE_HOME must be ignored.
+CACHE_DIR = (Path(_XDG_CACHE_HOME) if _XDG_CACHE_HOME.startswith("/") else Path.home() / ".cache") / "omarchy-maestral"
 SPACE_CACHE = CACHE_DIR / "space.json"
 SPACE_CACHE_TTL_SEC = 900
 REEXEC_FLAG = "OMARCHY_MAESTRAL_REEXEC"
 
 EXTRA_BIN_DIRS = [
   Path.home() / ".local" / "bin",
-  Path.home() / ".local" / "share" / "maestral-venv" / "bin",
+  Path.home() / ".local" / "share" / "omarchy-maestral" / "venv" / "bin",
 ]
 
 
